@@ -1,0 +1,104 @@
+
+This directory contains a prototype proof-of-concept system
+for managing suspend in Linux.
+Thus the Linux SUSpend Daemon.
+
+It contains:
+
+ lsusd:
+    The main daemon.  It is written to run a tight loop and blocks as
+     required.  It obeys the wakeup_count protocol to get race-free
+     suspend and allows clients to register to find out about
+     suspend and to block it either briefly or longer term.
+    It uses files in /var/run/suspend for all communication.
+
+    File are:
+
+      disabled:  This file always exists.  If any process holds a
+        shared flock(), suspend will not happen.
+      immediate:  If this file exists, lsusd will try to suspend whenever
+        possible.
+      request:  If this is created, then lsusd will try to suspend
+        once, and will remove the file when suspend completes or aborts.
+      watching:  This is normally empty.  Any process wanting to know
+        about suspend should take a shared flock and check the file is
+        still empty, and should watch for modification.
+        When suspend is imminent, lsusd creates 'watching-next', writes
+         a byte to 'watching' and waits for an exclusive lock on 'watching'.
+        Clients should move their lock to 'watching-next' when ready for
+        suspend.
+        When suspend completes, another byte (or 2) is written to
+        'watching', and 'watching-next' is renamed over it.  Clients can
+        use either of these to know that resume has happened.
+
+      watching-next: The file that will be 'watching' in the next awake cycle.
+
+    lsusd does not try to be event-loop based because:
+      - /sys/power/wakeup_count is not pollable.  This could probably be
+        'fixed' but I want code to work with today's kernel.  It will probably
+        only block 100msec at most, but that might be too long???
+      - I cannot get an event notification when a lock is removed from a
+        file. :-(  And I think locks are an excellent light-weight
+        mechanism for blocking suspend.
+
+  lsused:
+      This is an event-loop based daemon that can therefore easily handle
+      socket connections and client protocols which need prompt
+      response.  It communicates with lsusd and provides extra
+      services to client.
+
+      lsused (which needs a better name) listens on the socket
+            /var/run/suspend/registration
+      A client may connect and send a list of file descriptors.
+      When a suspend is immanent, if any file descriptor is readable,
+      lsused will send a 'S' message to the client and await an 'R' reply
+      (S == suspend, R == ready).  When all replies are in, lsused will
+      allow the suspend to complete.  When it does (or aborts), it will send
+      'A' (awake) to those clients to which it sent 'S'.
+
+      This allows a client to get a chance to handle any wakeup events,
+      but not to be woken unnecessarily on every suspend.
+
+   wakealarmd:
+      This allows clients to register on the socket.
+             /var/run/suspend/wakealarm
+      They write a timestamp in seconds since epoch, and will receive
+      a 'Now' message when that time arrives.
+      Between the time the connection is made and the time a "seconds"
+      number is written, suspend will be blocked.
+      Also between the time that "Now" is sent and when the socket is
+      closed, suspend is also blocked.
+
+   request_suspend:
+      A simple tool to create the 'request' file and then wait for it
+      to be removed.
+
+   libsus.a:  A library of client-side interfaces.
+      suspend_open, suspend_block, suspend_allow, suspend_close:
+           easy interface to blocking suspend
+      suspend_watch, suspend_unwatch:
+           For use in libevent program to get notifications of
+           suspend and resume via the 'watching' file.
+      wake_set, wake_destory:
+           create a libevent event for an fd which is protected from
+           suspend. Whenever it is readable, suspend will not be entered.
+      wakealarm_set, wakealarm_destroy:
+           create a libevent event for a particular time which will
+           trigger even if system is suspend, and will protect against
+           suspend while event is happening.
+
+
+   block_test watch_test event_test alarm_test
+        simple test programs for the above interfaces.
+
+
+    suspend.py  dnotify.py:
+       Sample code for detecting suspend/resume from python
+    block.sh test_block.sh:
+       Sample code for disabling suspend from shell.
+
+All code is available under GPLv2+.  However if you ask for a different
+license I am unlikely to refuse (at least with the early prototype).
+
+Patches and comment are welcome, but please also feel free to include
+any of this in some more complete framework.
