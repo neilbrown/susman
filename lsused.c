@@ -250,7 +250,8 @@ main(int argc, char *argv[])
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, "/var/run/suspend/registration");
 	unlink("/var/run/suspend/registration");
-	bind(s, (struct sockaddr *)&addr, sizeof(addr));
+	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		exit(1);
 	listen(s, 20);
 
 	event_init();
