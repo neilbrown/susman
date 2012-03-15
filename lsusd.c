@@ -181,6 +181,7 @@ main(int argc, char *argv)
 			/* blocked - so need to ensure request still valid */
 			continue;
 		}
+		flock(disable, LOCK_UN);;
 		/* we got that without blocking but are not holding it */
 
 		/* Next two might block, but that doesn't abort suspend */
