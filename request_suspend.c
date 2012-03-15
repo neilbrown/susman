@@ -34,12 +34,13 @@ main(int argc, char *argv[])
 	int dirfd = open("/var/run/suspend", O_RDONLY);
 	int fd_request = open("/var/run/suspend/request",
 			      O_RDWR|O_CREAT, 0640);
+	int fd_watching = open("/var/run/suspend/watching", O_RDONLY);
 	if (fd_request < 0)
-		exit(1);
+		exit(2);
 
 
 	if (dirfd < 0)
-		exit(1);
+		exit(2);
 	/* Wait for unlink */
 	while (1) {
 		int fd;
@@ -54,16 +55,22 @@ main(int argc, char *argv[])
 		fcntl(dirfd, F_NOTIFY, DN_DELETE);
 
 		if (fstat(fd_request, &stat) != 0
-		    || stat.st_nlink == 0)
-			exit(0);
-		fd = open("/var/run/suspend/disabled", O_RDONLY);
-		if (fd >= 0) {
-			if (flock(fd, LOCK_EX|LOCK_NB) != 0) {
-				/* Someone is blocking suspend */
-				unlink("/var/run/suspend/request");
+		    || stat.st_nlink == 0) {
+			struct stat s1, s2;
+			int fd_watching2 = open("/var/run/suspend/watching",
+						O_RDONLY);
+			if (fd_watching < 0 ||
+			    fd_watching2 < 0 ||
+			    fstat(fd_watching, &s1) < 0 ||
+			    fstat(fd_watching2, &s2) < 0)
+				/* something strange */
+				exit(2);
+			if (s1.st_ino == s2.st_ino)
+				/* Didn't suspend - someone must be
+				 * blocking suspend
+				 */
 				exit(1);
-			}
-			close(fd);
+			exit(0);
 		}
 
 		sigsuspend(&oldset);
