@@ -145,6 +145,31 @@ static void wait_request(int dirfd)
 	} while (!found_immediate && !found_request);
 }
 
+static int request_valid()
+{
+	/* check if the request to suspend is still valid.
+	 * If the 'immediate' file is not locked, we remove
+	 * and ignore it as the requesting process has died
+	 */
+	int fd = open("/var/run/suspend/immediate", O_RDWR);
+	if (fd >= 0) {
+		if (flock(fd, LOCK_EX|LOCK_NB) == 0) {
+			/* we got the lock, so owner must have died */
+			unlink("/var/run/suspend/immediate");
+			close(fd);
+		} else {
+			/* Still valid */
+			close(fd);
+			return 1;
+		}
+	}
+	fd = open("/var/run/suspend/request", O_RDONLY);
+	if (fd < 0)
+		return 0;
+	close(fd);
+	return 1;
+}
+
 static void do_suspend(void)
 {
 	int fd = open("/sys/power/state", O_RDWR);
@@ -191,6 +216,7 @@ main(int argc, char *argv)
 		alert_watchers();
 
 		if (flock(disable, LOCK_EX|LOCK_NB) == 0
+		    && request_valid()
 		    && set_wakeup_count(count))
 			do_suspend();
 		flock(disable, LOCK_UN);
