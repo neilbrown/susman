@@ -76,6 +76,22 @@ class monitor:
         fcntl.flock(old, fcntl.LOCK_UN)
         old.close()
 
+blockfd = None
+def block():
+    global blockfd
+    if blockfd:
+        return
+    try:
+        blockfd = open('/var/run/suspend/disabled')
+        fcntl.flock(blockfd, fcntl.LOCK_SH)
+    except:
+        pass
+
+def unblock():
+    global blockfd
+    if blockfd:
+        blockfd.close()
+        blockfd = None
 
 
 if __name__ == '__main__':
