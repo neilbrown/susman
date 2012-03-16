@@ -253,6 +253,8 @@ main(int argc, char *argv[])
 	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		exit(1);
 	listen(s, 20);
+	/* Incase someone is waiting for us... */
+	close(0);
 
 	event_init();
 

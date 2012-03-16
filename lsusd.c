@@ -168,6 +168,8 @@ main(int argc, char *argv)
 	if (dir < 0 || disable < 0)
 		exit(1);
 
+	close(0);
+
 	while (1) {
 		int count;
 

@@ -14,7 +14,7 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-PROGS = lsusd lsused request_suspend wakealarmd
+PROGS = lsusd lsused request_suspend wakealarmd susman
 TESTS = block_test watch_test event_test alarm_test
 LIBS = suspend_block.o watcher.o wakeevent.o wakealarm.o
 
@@ -27,6 +27,12 @@ lsused: lsused.o libsus.a
 
 wakealarmd: wakealarmd.o libsus.a
 	$(CC) -o wakealarmd wakealarmd.o libsus.a -levent
+
+%-m.o: %.c
+	$(CC) -o $@ -c $(CFLAGS) -Dmain=$* $<
+
+susman: susman.o lsusd-m.o lsused-m.o wakealarmd-m.o libsus.a
+	$(CC) -o susman susman.o lsusd-m.o lsused-m.o wakealarmd-m.o libsus.a -levent
 
 request_suspend: request_suspend.o
 
