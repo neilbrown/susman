@@ -45,6 +45,7 @@ class monitor:
         self.suspend = suspend_callback
         self.resume = resume_callback
         self.watch = lock_watcher.watch("watching", self.change)
+        self.immediate_fd = None
 
     def getlock(self):
         # lock file, protecting againt getting IOError when we get signalled.
@@ -75,6 +76,19 @@ class monitor:
         self.suspended = True
         fcntl.flock(old, fcntl.LOCK_UN)
         old.close()
+
+    def immediate(self, on):
+        if on:
+            if self.immediate_fd:
+                return
+            self.immediate_fd = open('/var/run/suspend/immediate','w')
+            fcntl.flock(self.immediate_fd, fcntl.LOCK_EX)
+            return
+        else:
+            if not self.immediate_fd:
+                return
+            self.immediate_fd.close()
+            self.immediate_fd = None
 
 blockfd = None
 def block():
