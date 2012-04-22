@@ -101,22 +101,21 @@ class monitor:
             self.immediate_fd.close()
             self.immediate_fd = None
 
-blockfd = None
-def block():
-    global blockfd
-    if blockfd:
-        return
-    try:
-        blockfd = open('/var/run/suspend/disabled')
-        fcntl.flock(blockfd, fcntl.LOCK_SH)
-    except:
-        pass
+class blocker:
+    def __init__(self, blocked = True):
+        self.blockfd = open('/var/run/suspend/disabled')
+        if blocked:
+            self.block()
+    def block(self):
+        fcntl.flock(self.blockfd, fcntl.LOCK_SH)
+    def unblock(self):
+        fcntl.flock(self.blockfd, fcntl.LOCK_UN)
+    def close(self):
+        self.blockfd.close()
+        self.blockfd = None
+    def abort(self):
+        self.blockfd.read(1)
 
-def unblock():
-    global blockfd
-    if blockfd:
-        blockfd.close()
-        blockfd = None
 
 def abort_cycle():
     fd = open('/var/run/suspend/disabled')
