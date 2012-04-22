@@ -58,14 +58,11 @@ static void cycle_watchers(void)
 	fd = open("/var/run/suspend/watching", O_RDWR|O_CREAT, 0640);
 	if (fd < 0)
 		return;
-	zero[0] = zero[1] = 0;
-	if (write(fd, zero, 2) != 2) {
-		close(fd);
-		return;
-	}
-	close(fd);
 	rename("/var/run/suspend/watching-next",
 	       "/var/run/suspend/watching");
+	zero[0] = zero[1] = 0;
+	write(fd, zero, 2);
+	close(fd);
 }
 
 static int read_wakeup_count()
