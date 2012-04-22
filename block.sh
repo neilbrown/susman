@@ -18,7 +18,7 @@
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 block_suspend() {
-    exec 9< /var/run/suspend/disabled
+    exec 9< /run/suspend/disabled
     flock --shared 9
 }
 

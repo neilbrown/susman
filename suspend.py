@@ -32,13 +32,13 @@ class monitor:
         """
         global lock_watcher
         if not lock_watcher:
-            lock_watcher = dnotify.dir('/var/run/suspend')
+            lock_watcher = dnotify.dir('/run/suspend')
 
-        self.f = open('/var/run/suspend/watching', 'r')
+        self.f = open('/run/suspend/watching', 'r')
         self.getlock()
         while os.fstat(self.f.fileno()).st_nlink == 0:
             self.f.close()
-            self.f = open('/var/run/suspend/watching', 'r')
+            self.f = open('/run/suspend/watching', 'r')
             self.getlock()
 
         self.suspended = False
@@ -61,7 +61,7 @@ class monitor:
         if self.suspended:
             # resume has happened if watching-next has been renamed.
             if (os.fstat(self.f.fileno()).st_ino ==
-                os.stat('/var/run/suspend/watching').st_ino):
+                os.stat('/run/suspend/watching').st_ino):
                 global lock_watcher
                 self.suspended = False
                 self.watch.cancel()
@@ -80,7 +80,7 @@ class monitor:
         # ready for suspend
         global lock_watcher
         old = self.f
-        self.f = open('/var/run/suspend/watching-next', 'r')
+        self.f = open('/run/suspend/watching-next', 'r')
         self.getlock()
         self.suspended = True
         self.watch.cancel()
@@ -92,7 +92,7 @@ class monitor:
         if on:
             if self.immediate_fd:
                 return
-            self.immediate_fd = open('/var/run/suspend/immediate','w')
+            self.immediate_fd = open('/run/suspend/immediate','w')
             fcntl.flock(self.immediate_fd, fcntl.LOCK_EX)
             return
         else:
@@ -103,7 +103,7 @@ class monitor:
 
 class blocker:
     def __init__(self, blocked = True):
-        self.blockfd = open('/var/run/suspend/disabled')
+        self.blockfd = open('/run/suspend/disabled')
         if blocked:
             self.block()
     def block(self):
@@ -118,7 +118,7 @@ class blocker:
 
 
 def abort_cycle():
-    fd = open('/var/run/suspend/disabled')
+    fd = open('/run/suspend/disabled')
     fd.read(1)
     fd.close()
 

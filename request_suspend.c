@@ -31,10 +31,10 @@ static void catch(int sig)
 
 main(int argc, char *argv[])
 {
-	int dirfd = open("/var/run/suspend", O_RDONLY);
-	int fd_request = open("/var/run/suspend/request",
+	int dirfd = open("/run/suspend", O_RDONLY);
+	int fd_request = open("/run/suspend/request",
 			      O_RDWR|O_CREAT, 0640);
-	int fd_watching = open("/var/run/suspend/watching", O_RDONLY);
+	int fd_watching = open("/run/suspend/watching", O_RDONLY);
 	if (fd_request < 0)
 		exit(2);
 
@@ -57,7 +57,7 @@ main(int argc, char *argv[])
 		if (fstat(fd_request, &stat) != 0
 		    || stat.st_nlink == 0) {
 			struct stat s1, s2;
-			int fd_watching2 = open("/var/run/suspend/watching",
+			int fd_watching2 = open("/run/suspend/watching",
 						O_RDONLY);
 			if (fd_watching < 0 ||
 			    fd_watching2 < 0 ||

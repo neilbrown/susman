@@ -1,7 +1,7 @@
 /*
  * susman - manage suspend
  * This daemon forks and runs three processes
- * - one which manages suspend based on files in /var/run/suspend
+ * - one which manages suspend based on files in /run/suspend
  * - one which listens on a socket and handles suspend requests that way,
  * - one which provides a wakeup service using the RTC alarm.
  *

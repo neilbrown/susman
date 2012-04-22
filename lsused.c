@@ -8,7 +8,7 @@
  * shared lock on the suspend/disabled file and then read the event.
  *
  * The client opens connects on a unix domain socket to
- * /var/run/suspend/registration
+ * /run/suspend/registration
  * It sets 'W' with some fds attached to be watched.
  * On notification if any fds are readable we send by 'S' to say
  * Suspend Soon and wait for 'R' to say 'Ready'.
@@ -248,8 +248,8 @@ main(int argc, char *argv[])
 
 	s = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK|SOCK_CLOEXEC, 0);
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, "/var/run/suspend/registration");
-	unlink("/var/run/suspend/registration");
+	strcpy(addr.sun_path, "/run/suspend/registration");
+	unlink("/run/suspend/registration");
 	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		exit(1);
 	listen(s, 20);

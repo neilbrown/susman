@@ -10,7 +10,7 @@ It contains:
      required.  It obeys the wakeup_count protocol to get race-free
      suspend and allows clients to register to find out about
      suspend and to block it either briefly or longer term.
-    It uses files in /var/run/suspend for all communication.
+    It uses files in /run/suspend for all communication.
 
     File are:
 
@@ -48,7 +48,7 @@ It contains:
       services to client.
 
       lsused (which needs a better name) listens on the socket
-            /var/run/suspend/registration
+            /run/suspend/registration
       A client may connect and send a list of file descriptors.
       When a suspend is immanent, if any file descriptor is readable,
       lsused will send a 'S' message to the client and await an 'R' reply
@@ -61,7 +61,7 @@ It contains:
 
    wakealarmd:
       This allows clients to register on the socket.
-             /var/run/suspend/wakealarm
+             /run/suspend/wakealarm
       They write a timestamp in seconds since epoch, and will receive
       a 'Now' message when that time arrives.
       Between the time the connection is made and the time a "seconds"

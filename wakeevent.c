@@ -112,7 +112,7 @@ struct event *wake_set(int fd, void(*fn)(int,short,void*), void *data, int prio)
 	if (h->sock < 0 || h->disable < 0)
 		goto abort;
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, "/var/run/suspend/registration");
+	strcpy(addr.sun_path, "/run/suspend/registration");
 	if (connect(h->sock, (struct sockaddr*)&addr, sizeof(addr)) != 0)
 		goto abort;
 

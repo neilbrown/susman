@@ -72,7 +72,7 @@ struct event *wakealarm_set(time_t when, void(*fn)(int, short, void*),
 		goto abort;
 
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, "/var/run/suspend/wakealarm");
+	strcpy(addr.sun_path, "/run/suspend/wakealarm");
 	if (connect(h->sock, (struct sockaddr*)&addr, sizeof(addr)) != 0)
 		goto abort;
 

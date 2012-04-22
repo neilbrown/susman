@@ -25,7 +25,7 @@
 
 int suspend_open()
 {
-	return open("/var/run/suspend/disabled", O_RDONLY|O_CLOEXEC);
+	return open("/run/suspend/disabled", O_RDONLY|O_CLOEXEC);
 }
 
 int suspend_block(int handle)

@@ -75,7 +75,7 @@ static void checkdir(int efd, short ev, void *vp)
 		return;
 
 	/* We need to move on now. */
-	fd = open("/var/run/suspend/watching-next", O_RDONLY|O_CLOEXEC);
+	fd = open("/run/suspend/watching-next", O_RDONLY|O_CLOEXEC);
 	flock(fd, LOCK_SH);
 	han->nextfd = fd;
 	rv = han->will_suspend(han->data);
@@ -107,12 +107,12 @@ void *suspend_watch(int (*will_suspend)(void *data),
 	han->nextfd = -1;
 	signal_set(&han->ev, SIGIO, checkdir, han);
 	signal_add(&han->ev, NULL);
-	han->dirfd = open("/var/run/suspend", O_RDONLY|O_CLOEXEC);
+	han->dirfd = open("/run/suspend", O_RDONLY|O_CLOEXEC);
 	if (han->dirfd < 0)
 		goto abort;
 	fcntl(han->dirfd, F_NOTIFY, DN_MODIFY | DN_MULTISHOT);
 again:
-	fd = open("/var/run/suspend/watching", O_RDONLY|O_CLOEXEC);
+	fd = open("/run/suspend/watching", O_RDONLY|O_CLOEXEC);
 	flock(fd, LOCK_SH);
 	han->fd = fd;
 	checkdir(0, 0, han);

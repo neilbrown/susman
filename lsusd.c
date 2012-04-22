@@ -34,12 +34,12 @@ static void alert_watchers(void)
 	int fd;
 	char zero = 0;
 
-	fd = open("/var/run/suspend/watching-next",
+	fd = open("/run/suspend/watching-next",
 		  O_RDWR|O_CREAT|O_TRUNC, 0640);
 	if (fd < 0)
 		return;
 	close(fd);
-	fd = open("/var/run/suspend/watching",
+	fd = open("/run/suspend/watching",
 		  O_RDWR|O_CREAT|O_TRUNC, 0640);
 	if (fd < 0)
 		return;
@@ -55,11 +55,11 @@ static void cycle_watchers(void)
 	int fd;
 	char zero[2];
 
-	fd = open("/var/run/suspend/watching", O_RDWR|O_CREAT, 0640);
+	fd = open("/run/suspend/watching", O_RDWR|O_CREAT, 0640);
 	if (fd < 0)
 		return;
-	rename("/var/run/suspend/watching-next",
-	       "/var/run/suspend/watching");
+	rename("/run/suspend/watching-next",
+	       "/run/suspend/watching");
 	zero[0] = zero[1] = 0;
 	write(fd, zero, 2);
 	close(fd);
@@ -148,11 +148,11 @@ static int request_valid()
 	 * If the 'immediate' file is not locked, we remove
 	 * and ignore it as the requesting process has died
 	 */
-	int fd = open("/var/run/suspend/immediate", O_RDWR);
+	int fd = open("/run/suspend/immediate", O_RDWR);
 	if (fd >= 0) {
 		if (flock(fd, LOCK_EX|LOCK_NB) == 0) {
 			/* we got the lock, so owner must have died */
-			unlink("/var/run/suspend/immediate");
+			unlink("/run/suspend/immediate");
 			close(fd);
 		} else {
 			/* Still valid */
@@ -160,7 +160,7 @@ static int request_valid()
 			return 1;
 		}
 	}
-	fd = open("/var/run/suspend/request", O_RDONLY);
+	fd = open("/run/suspend/request", O_RDONLY);
 	if (fd < 0)
 		return 0;
 	close(fd);
@@ -182,10 +182,10 @@ main(int argc, char *argv)
 	int dir;
 	int disable;
 
-	mkdir("/var/run/suspend", 0770);
+	mkdir("/run/suspend", 0770);
 
-	dir = open("/var/run/suspend", O_RDONLY);
-	disable = open("/var/run/suspend/disabled", O_RDWR|O_CREAT, 0640);
+	dir = open("/run/suspend", O_RDONLY);
+	disable = open("/run/suspend/disabled", O_RDWR|O_CREAT, 0640);
 
 	if (dir < 0 || disable < 0)
 		exit(1);
@@ -202,12 +202,12 @@ main(int argc, char *argv)
 		struct stat stb;
 
 		/* Don't accept an old request */
-		unlink("/var/run/suspend/request");
+		unlink("/run/suspend/request");
 		wait_request(dir);
 		if (flock(disable, LOCK_EX|LOCK_NB) != 0) {
 			flock(disable, LOCK_EX);
 			flock(disable, LOCK_UN);
-			unlink("/var/run/suspend/request");
+			unlink("/run/suspend/request");
 			/* blocked - so need to ensure request still valid */
 			continue;
 		}

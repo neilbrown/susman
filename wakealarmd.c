@@ -221,8 +221,8 @@ int main(int argc, char *argv[])
 
 	s = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK|SOCK_CLOEXEC, 0);
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, "/var/run/suspend/wakealarm");
-	unlink("/var/run/suspend/wakealarm");
+	strcpy(addr.sun_path, "/run/suspend/wakealarm");
+	unlink("/run/suspend/wakealarm");
 	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		exit(2);
 	listen(s, 20);
