@@ -58,22 +58,33 @@ class monitor:
                 pass
 
     def change(self, watched):
-        if os.fstat(self.f.fileno()).st_size == 0:
-            if self.suspended and os.stat('/var/run/suspend/watching').st_size == 0:
+        if self.suspended:
+            # resume has happened if watching-next has been renamed.
+            if (os.fstat(self.f.fileno()).st_ino ==
+                os.stat('/var/run/suspend/watching').st_ino):
+                global lock_watcher
                 self.suspended = False
+                self.watch.cancel()
+                self.watch = lock_watcher.watch("watching", self.change)
                 if self.resume:
                     self.resume()
-            return
-        if not self.suspended and (not self.suspend or self.suspend()):
-            # ready for suspend
-            self.release()
+            else:
+                return
+        # not suspended, but maybe it's time
+        if os.fstat(self.f.fileno()).st_size > 0:
+            if not self.suspend or self.suspend():
+                # ready for suspend
+                self.release()
 
     def release(self):
         # ready for suspend
+        global lock_watcher
         old = self.f
         self.f = open('/var/run/suspend/watching-next', 'r')
         self.getlock()
         self.suspended = True
+        self.watch.cancel()
+        self.watch = lock_watcher.watch("watching-next", self.change)
         fcntl.flock(old, fcntl.LOCK_UN)
         old.close()
 
