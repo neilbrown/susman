@@ -18,6 +18,8 @@ PROGS = lsusd lsused request_suspend wakealarmd susman
 TESTS = block_test watch_test event_test alarm_test
 LIBS = suspend_block.o watcher.o wakeevent.o wakealarm.o
 
+DEST = /usr/local/bin
+LIBDEST = /usr/local/lib
 all: $(PROGS) $(TESTS)
 
 lsusd: lsusd.o
@@ -35,6 +37,13 @@ susman: susman.o lsusd-m.o lsused-m.o wakealarmd-m.o libsus.a
 	$(CC) -o susman susman.o lsusd-m.o lsused-m.o wakealarmd-m.o libsus.a -levent
 
 request_suspend: request_suspend.o
+
+install: susman suspend.py block.sh libsus.a
+	cp susman suspend.py $(DEST)
+	cp block.sh $(DEST)/suspend.sh
+	chmod 755 $(DEST)/susman $(DEST)/suspend.py $(DEST)/suspend.sh
+	cp libsus.a $(LIBDEST)
+	chmod 644 $(LIBDEST)/libsus.a
 
 block_test: block_test.o libsus.a
 	$(CC) -o block_test block_test.o libsus.a
