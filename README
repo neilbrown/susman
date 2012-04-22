@@ -1,9 +1,13 @@
 
 This directory contains a prototype proof-of-concept system
 for managing suspend in Linux.
-Thus the Linux SUSpend Daemon.
+Thus SUSpend MANager (previously called lsusd: Linux SUSpend Daemon)
 
 It contains:
+
+ susman:
+    The composite daemon.  This runs as three processes representing
+    lsusd, lsused, and wakealarmd as described below.
 
  lsusd:
     The main daemon.  It is written to run a tight loop and blocks as
@@ -15,16 +19,18 @@ It contains:
     File are:
 
       disabled:  This file always exists.  If any process holds a
-        shared flock(), suspend will not happen.
-      immediate:  If this file exists, lsusd will try to suspend whenever
-        possible.
+        shared flock(), suspend will not happen.  If a process reads
+        from this file the current suspend attempt will abort.  For
+        this to work, '/var' needs to be mounted with "-o strictatime".
+      immediate:  If this file exists and an exclusive lock is held on
+        it, lsusd will try to suspend whenever possible.
       request:  If this is created, then lsusd will try to suspend
         once, and will remove the file when suspend completes or aborts.
       watching:  This is normally empty.  Any process wanting to know
         about suspend should take a shared flock and check the file is
         still empty, and should watch for modification.
         When suspend is imminent, lsusd creates 'watching-next', writes
-         a byte to 'watching' and waits for an exclusive lock on 'watching'.
+        a byte to 'watching' and waits for an exclusive lock on 'watching'.
         Clients should move their lock to 'watching-next' when ready for
         suspend.
         When suspend completes, another byte (or 2) is written to
@@ -45,7 +51,7 @@ It contains:
       This is an event-loop based daemon that can therefore easily handle
       socket connections and client protocols which need prompt
       response.  It communicates with lsusd and provides extra
-      services to client.
+      services to clients.
 
       lsused (which needs a better name) listens on the socket
             /run/suspend/registration
@@ -60,7 +66,7 @@ It contains:
       but not to be woken unnecessarily on every suspend.
 
    wakealarmd:
-      This allows clients to register on the socket.
+      This allows clients to register on the socket
              /run/suspend/wakealarm
       They write a timestamp in seconds since epoch, and will receive
       a 'Now' message when that time arrives.
@@ -74,10 +80,11 @@ It contains:
       to be removed.
 
    libsus.a:  A library of client-side interfaces.
-      suspend_open, suspend_block, suspend_allow, suspend_close:
+      suspend_open, suspend_block, suspend_allow, suspend_close,
+	suspend_abort:
            easy interface to blocking suspend
       suspend_watch, suspend_unwatch:
-           For use in libevent program to get notifications of
+           For use in libevent programs to get notifications of
            suspend and resume via the 'watching' file.
       wake_set, wake_destory:
            create a libevent event for an fd which is protected from
@@ -100,5 +107,5 @@ It contains:
 All code is available under GPLv2+.  However if you ask for a different
 license I am unlikely to refuse (at least with the early prototype).
 
-Patches and comment are welcome, but please also feel free to include
+Patches and comments are welcome, but please also feel free to include
 any of this in some more complete framework.
