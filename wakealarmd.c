@@ -38,7 +38,6 @@
 
 struct conn {
 	struct event	ev;
-	struct event	tev;
 	time_t		stamp;	/* When to wake */
 	int		active; /* stamp has passed */
 	struct conn	*next;	/* sorted by 'stamp' */
@@ -47,6 +46,7 @@ struct conn {
 
 struct state {
 	struct event	ev;
+	struct event	tev;
 	int		disablefd;
 	int		disabled;
 	void		*watcher;
@@ -54,6 +54,7 @@ struct state {
 	int		active_count;
 };
 
+static void do_timeout(int fd, short ev, void *data);
 static void add_han(struct conn *han)
 {
 	struct state *state = han->state;
@@ -67,18 +68,9 @@ static void add_han(struct conn *han)
 	han->next = *hanp;
 	*hanp = han;
 
-	time(&now);
-	if (now < han->stamp) {
-		tv.tv_sec = han->stamp - now;
-		tv.tv_usec = 0;
-		evtimer_add(&han->tev, &tv);
-		han->active = 0;
-	} else {
-		if (!han->active) {
-			han->active = 1;
-			state->active_count++;
-		}
-	}
+	if (event_get_base(&state->tev))
+		evtimer_del(&state->tev);
+	do_timeout(0, 0, (void*)state);
 }
 
 static void del_han(struct conn *han)
@@ -92,6 +84,7 @@ static void del_han(struct conn *han)
 	if (*hanp == han) {
 		*hanp = han->next;
 		if (han->active) {
+			han->active = 0;
 			state->active_count--;
 			if (state->active_count == 0
 			    && state->disabled) {
@@ -105,7 +98,6 @@ static void del_han(struct conn *han)
 static void destroy_han(struct conn *han)
 {
 	event_del(&han->ev);
-	event_del(&han->tev);
 	free(han);
 }
 
@@ -126,20 +118,29 @@ static void do_read(int fd, short ev, void *data)
 	}
 	del_han(han);
 	han->stamp = atol(buf);
-	add_han(han);
 	sprintf(buf, "%lld\n", (long long)han->stamp);
 	write(fd, buf, strlen(buf));
+	add_han(han);
 }
 
 static void do_timeout(int fd, short ev, void *data)
 {
-	struct conn *han = data;
+	struct state *state = data;
+	struct conn *han;
+	time_t now = time(0);
 
-	if (!han->active) {
-		han->active = 1;
-		han->state->active_count++;
+	for (han = state->conns; han && han->stamp <= now; han = han->next)
+		if (!han->active) {
+			han->active = 1;
+			han->state->active_count++;
+			write(EVENT_FD(&han->ev), "Now\n", 4);
+		}
+	if (han) {
+		struct timeval tv;
+		tv.tv_sec = han->stamp - now;
+		tv.tv_usec = 0;
+		evtimer_add(&state->tev, &tv);
 	}
-	write(EVENT_FD(&han->ev), "Now\n", 4);
 }
 
 static void do_accept(int fd, short ev, void *data)
@@ -162,7 +163,6 @@ static void do_accept(int fd, short ev, void *data)
 	han->next = state->conns;
 	state->conns = han;
 
-	evtimer_set(&han->tev, do_timeout, han);
 	event_set(&han->ev, newfd, EV_READ | EV_PERSIST, do_read, han);
 	event_add(&han->ev, NULL);
 	write(newfd, "0\n", 2);
@@ -175,6 +175,8 @@ static int do_suspend(void *data)
 
 	time(&now);
 
+	if (event_get_base(&state->tev))
+		evtimer_del(&state->tev);
 	/* active_count must be zero */
 	if (state->conns == NULL)
 		return 1;
@@ -199,6 +201,13 @@ static int do_suspend(void *data)
 	return 1;
 }
 
+static void do_resume(void *data)
+{
+	struct state *state = data;
+
+	do_timeout(0, 0, (void*)state);
+}
+
 int main(int argc, char *argv[])
 {
 	struct state st;
@@ -219,9 +228,10 @@ int main(int argc, char *argv[])
 	listen(s, 20);
 
 	event_init();
-	st.watcher = suspend_watch(do_suspend, NULL, &st);
+	st.watcher = suspend_watch(do_suspend, do_resume, &st);
 	event_set(&st.ev, s, EV_READ | EV_PERSIST, do_accept, &st);
 	event_add(&st.ev, NULL);
+	evtimer_set(&st.tev, do_timeout, &st);
 
 	event_loop(0);
 	exit(0);
