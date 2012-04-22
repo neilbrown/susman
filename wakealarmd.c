@@ -182,6 +182,7 @@ static int do_suspend(void *data)
 		int fd = open("/sys/class/rtc/rtc0/wakealarm", O_WRONLY);
 		if (fd >= 0) {
 			char buf[20];
+			write(fd, "0\n", 2);
 			sprintf(buf, "%lld\n",
 				(long long)state->conns->stamp - 2);
 			write(fd, buf, strlen(buf));
@@ -190,7 +191,7 @@ static int do_suspend(void *data)
 		return 1;
 	}
 	/* too close to next wakeup */
-	if (state->disabled) {
+	if (!state->disabled) {
 		suspend_block(state->disablefd);
 		state->disabled = 1;
 	}
