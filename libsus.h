@@ -20,7 +20,7 @@ int suspend_open();
 int suspend_block(int handle);
 void suspend_allow(int handle);
 int suspend_close(int handle);
-
+void suspend_abort(int handle);
 
 void *suspend_watch(int (*will_suspend)(void *data),
 		    void (*did_resume)(void *data),

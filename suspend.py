@@ -118,6 +118,10 @@ def unblock():
         blockfd.close()
         blockfd = None
 
+def abort_cycle():
+    fd = open('/var/run/suspend/disabled')
+    fd.read(1)
+    fd.close()
 
 if __name__ == '__main__':
     import signal

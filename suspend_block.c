@@ -50,3 +50,13 @@ int suspend_close(int handle)
 		close(handle);
 }
 
+void suspend_abort(int handle)
+{
+	int h = handle;
+	char c;
+	if (handle < 0)
+		h = suspend_open();
+	read(h, &c, 1);
+	if (handle < 0)
+		suspend_close(h);
+}

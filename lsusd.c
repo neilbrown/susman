@@ -201,6 +201,8 @@ main(int argc, char *argv)
 
 	while (1) {
 		int count;
+		struct timespec ts;
+		struct stat stb;
 
 		/* Don't accept an old request */
 		unlink("/var/run/suspend/request");
@@ -217,10 +219,15 @@ main(int argc, char *argv)
 
 		/* Next two might block, but that doesn't abort suspend */
 		count = read_wakeup_count();
+		fstat(disable, &stb);
+		ts = stb.st_atim;
 		alert_watchers();
 
+		fstat(disable, &stb);
 		if (flock(disable, LOCK_EX|LOCK_NB) == 0
 		    && request_valid()
+		    && ts.tv_sec == stb.st_atim.tv_sec
+		    && ts.tv_nsec == stb.st_atim.tv_nsec
 		    && set_wakeup_count(count))
 			do_suspend();
 		flock(disable, LOCK_UN);
