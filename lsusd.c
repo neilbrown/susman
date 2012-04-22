@@ -193,6 +193,10 @@ main(int argc, char *argv)
 	if (dir < 0 || disable < 0)
 		exit(1);
 
+	/* Create the initial files */
+	alert_watchers();
+	cycle_watchers();
+
 	close(0);
 
 	while (1) {
