@@ -121,6 +121,7 @@ static void do_read(int fd, short ev, void *data)
 	if (n <= 0) {
 		del_han(han);
 		destroy_han(han);
+		close(fd);
 		return;
 	}
 	del_han(han);
