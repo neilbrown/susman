@@ -182,12 +182,24 @@ static int do_suspend(void *data)
 		return 1;
 
 	if (state->conns->stamp > now + 4) {
-		int fd = open("/sys/class/rtc/rtc0/wakealarm", O_WRONLY);
+		int fd = open("/sys/class/rtc/rtc0/since_epoch", O_RDONLY);
+		time_t rtc_now = now;
+		if (fd) {
+			char buf[20];
+			int n = read(fd, buf, 20);
+			close(fd);
+			if (n > 1 && n < 20) {
+				buf[n] = 0;
+				rtc_now = strtoul(buf, NULL, 10);
+			}
+		}
+		fd = open("/sys/class/rtc/rtc0/wakealarm", O_WRONLY);
 		if (fd >= 0) {
 			char buf[20];
 			write(fd, "0\n", 2);
 			sprintf(buf, "%lld\n",
-				(long long)state->conns->stamp - 2);
+				(long long)state->conns->stamp
+				- now + rtc_now - 2);
 			write(fd, buf, strlen(buf));
 			close(fd);
 		}
